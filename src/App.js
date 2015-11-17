@@ -9,15 +9,12 @@ export class Square extends Component {
     this.handleClick = this.handleClick.bind(this);
   }
   handleClick(e) {
-    this.setState({
-      xo: this.props.current(true)
-    });
+    if (!this.state.xo) {
+      this.setState({
+        xo: this.props.current(this.props.squareNumber)
+      });
+    }
     e.preventDefault();
-  }
-  squareText() {
-    if (!this.state.xo) return '';
-    else return this.state.xo;
-    console.log('xo', this.state.xo);
   }
   render() {
     return (
@@ -34,16 +31,32 @@ export class Squares extends Component {
     this.state = {
       current: 'x'
     }
+    this.claimSquare = this.claimSquare.bind(this);
     this.getSetXO = this.getSetXO.bind(this);
+    this.socket = io('http://localhost:3000');
+    this.socket.on('xo', function (data) {
+      console.log(data);
+    });
   }
-  getSetXO(clicked) {
-    if (typeof clicked !== 'undefined') this.setState({ current: this.state.current == 'x' ? 'o' : 'x' });
+
+  claimSquare(key) {
+    console.log('claim square', key);
+    this.socket.emit('xo', {
+      'key': key,
+      'xo': this.state.current
+    });
+  }
+
+  getSetXO(key) {
+    if (typeof key !== 'undefined') this.setState({ current: this.state.current == 'x' ? 'o' : 'x' });
+    this.claimSquare(key);
     return this.state.current;
   }
+
   render() {
     var squares = [];
     for (var i=0; i<this.props.count; i++) {
-      squares.push( <Square key={i} current={this.getSetXO} /> );
+      squares.push( <Square key={i} squareNumber={i} current={this.getSetXO} /> );
     }
     return (
       <div id="squares">
@@ -59,12 +72,9 @@ export class TicTac extends Component {
     this.state = {};
   }
   render() {
-    var boundClick = function() {
-      console.log('clicked');
-    }
     return (
       <div>
-        <Squares onClick="boundClick" count={9} />
+        <Squares count={9} />
       </div>
     );
   }

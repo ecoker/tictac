@@ -17,7 +17,19 @@ app.get('*', function(req, res) {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(3000, 'localhost', function(err) {
+/* CUSTOM SETTINGS --- */
+var server = require('http').createServer(app);
+var io = require('socket.io')(server);
+
+io.on('connection', function (socket) {
+	console.log('connected');
+	socket.on('xo', function(data){
+		console.log(data);
+	});
+	socket.emit('xo', { square: 1, xo: 'x' });
+});
+
+server.listen(3000, 'localhost', function(err) {
   if (err) {
     console.log(err);
     return;
