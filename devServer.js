@@ -18,6 +18,8 @@ app.get('*', function(req, res) {
 });
 
 /* CUSTOM SETTINGS --- */
+var flipCoin = function(){ return Math.round(Math.random()) > 0; };
+
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 
@@ -31,8 +33,43 @@ var newBoard = function(){
 var board = newBoard();
 var current = 'x';
 
+var players = {};
+var setPlayer = function(type, socket) {
+  players[socket.id] = type;
+};
+
+var rooms = {};
+var setRoom = function(name, socket){
+  name = name || 'default';
+  if (typeof rooms[name] == 'undefined') rooms[name] = {};
+  rooms[name].x = rooms[name].x || false;
+  rooms[name].o = rooms[name].o || false;
+  rooms[name].spectators = rooms[name].spectators || [];
+  if (!rooms[name].x && !rooms[name].o) {
+    if (flipCoin) {
+      rooms[name].x = socket.id;
+      setPlayer('x', socket);
+    }
+    else {
+      rooms[name].o = socket.id;
+      setPlayer('o', socket);
+    }
+  } else if (!rooms[name].x) {
+    rooms[name].x = socket.id;
+    setPlayer('x', socket);
+  } else if (!rooms[name].o) {
+    rooms[name].o = socket.id;
+    setPlayer('o', socket);
+  } else {
+    rooms[name].spectators.push(socket.id);
+    setPlayer('spectator', socket);
+  }
+};
+
+
+
 io.on('connection', function (socket) {
-	socket.on('xo', function(data){
+  socket.on('xo', function(data){
 		board[ data.key ].xo = current;
     current = current == 'x' ? 'o' : 'x';
     io.emit('board', board);
@@ -41,7 +78,10 @@ io.on('connection', function (socket) {
     board = newBoard();
     io.emit('board', board);
   });
-	socket.emit('board', board);
+  socket.emit('board', board);
+  socket.emit('player', players[socket.id]);
+  setRoom(false, socket);
+  console.log( rooms );
 });
 
 server.listen(3000, 'localhost', function(err) {
