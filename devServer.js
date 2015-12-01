@@ -21,12 +21,27 @@ app.get('*', function(req, res) {
 var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 
+var newBoard = function(){
+  var board = [];
+  for (var i=0;i<9;i++) {
+    board.push({xo:false});
+  }
+  return board;
+};
+var board = newBoard();
+var current = 'x';
+
 io.on('connection', function (socket) {
-	console.log('connected');
 	socket.on('xo', function(data){
-		console.log(data);
+		board[ data.key ].xo = current;
+    current = current == 'x' ? 'o' : 'x';
+    io.emit('board', board);
 	});
-	socket.emit('xo', { square: 1, xo: 'x' });
+  socket.on('reset', function(){
+    board = newBoard();
+    io.emit('board', board);
+  });
+	socket.emit('board', board);
 });
 
 server.listen(3000, 'localhost', function(err) {
@@ -34,6 +49,5 @@ server.listen(3000, 'localhost', function(err) {
     console.log(err);
     return;
   }
-
   console.log('Listening at http://localhost:3000');
 });

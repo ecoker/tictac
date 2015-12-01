@@ -3,65 +3,37 @@ import React, { Component } from 'react';
 export class Square extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      xo: false
-    };
     this.handleClick = this.handleClick.bind(this);
   }
   handleClick(e) {
-    if (!this.state.xo) {
-      this.setState({
-        xo: this.props.current(this.props.squareNumber)
-      });
-    }
+    this.props.claimSquare({
+      key: this.props.squareNumber
+    })
     e.preventDefault();
   }
   render() {
     return (
       <a href="#" className="square" onClick={this.handleClick}>
-        { this.state.xo }
+        { this.props.xo || '' }
       </a>
     );
   }
 }
 
-export class Squares extends Component {
+export class Reset extends Component {
   constructor(props) {
     super(props);
-    this.state = {
-      current: 'x'
-    }
-    this.claimSquare = this.claimSquare.bind(this);
-    this.getSetXO = this.getSetXO.bind(this);
-    this.socket = io('http://localhost:3000');
-    this.socket.on('xo', function (data) {
-      console.log(data);
-    });
+    this.handleClick = this.handleClick.bind(this);
   }
-
-  claimSquare(key) {
-    console.log('claim square', key);
-    this.socket.emit('xo', {
-      'key': key,
-      'xo': this.state.current
-    });
+  handleClick(e) {
+    this.props.resetGame();
+    e.preventDefault();
   }
-
-  getSetXO(key) {
-    if (typeof key !== 'undefined') this.setState({ current: this.state.current == 'x' ? 'o' : 'x' });
-    this.claimSquare(key);
-    return this.state.current;
-  }
-
   render() {
-    var squares = [];
-    for (var i=0; i<this.props.count; i++) {
-      squares.push( <Square key={i} squareNumber={i} current={this.getSetXO} /> );
-    }
     return (
-      <div id="squares">
-        {squares}
-      </div>
+      <a href="#" className="reset" onClick={this.handleClick}>
+        Reset Game
+      </a>
     );
   }
 }
@@ -69,12 +41,35 @@ export class Squares extends Component {
 export class TicTac extends Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      board: []
+    }
+    this.claimSquare = this.claimSquare.bind(this);
+    this.updateBoard = this.updateBoard.bind(this);
+    this.resetGame = this.resetGame.bind(this);
+    this.socket = io('http://localhost:3000');
+    this.socket.on('board', this.updateBoard);
+  }
+  updateBoard(data) {
+    this.setState({
+      board: data
+    });
+  }
+  claimSquare(data){
+    this.socket.emit('xo', data);
+  }
+  resetGame(){
+    this.socket.emit('reset');
   }
   render() {
+    var squares = [];
+    this.state.board.forEach(function(v,i){
+      squares.push( <Square key={i} squareNumber={i} claimSquare={this.claimSquare}  xo={v.xo} /> );
+    }, this);
     return (
       <div>
-        <Squares count={9} />
+        {squares}
+        <Reset resetGame={this.resetGame} />
       </div>
     );
   }
