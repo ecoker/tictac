@@ -34,8 +34,12 @@ var board = newBoard();
 var current = 'x';
 
 var players = {};
-var setPlayer = function(type, socket) {
-  players[socket.id] = type;
+var setPlayer = function(name, type, socket) {
+  players[socket.id] = {
+    room: name,
+    type: type
+  };
+  console.log('Socket ' + socket.id + ' has connected.');
 };
 
 var rooms = {};
@@ -48,18 +52,20 @@ var setRoom = function(name, socket){
   if (!rooms[name].x && !rooms[name].o) {
     if (flipCoin) {
       rooms[name].x = socket.id;
-      setPlayer('x', socket);
+      setPlayer(name, 'x', socket);
+      rooms[name].next = 'x';
     }
     else {
       rooms[name].o = socket.id;
-      setPlayer('o', socket);
+      setPlayer(name, 'o', socket);
+      rooms[name].next = 'o';
     }
   } else if (!rooms[name].x) {
     rooms[name].x = socket.id;
-    setPlayer('x', socket);
+    setPlayer(name, 'x', socket);
   } else if (!rooms[name].o) {
     rooms[name].o = socket.id;
-    setPlayer('o', socket);
+    setPlayer(name, 'o', socket);
   } else {
     rooms[name].spectators.push(socket.id);
     setPlayer('spectator', socket);
@@ -70,9 +76,21 @@ var setRoom = function(name, socket){
 
 io.on('connection', function (socket) {
   socket.on('xo', function(data){
-		board[ data.key ].xo = current;
-    current = current == 'x' ? 'o' : 'x';
-    io.emit('board', board);
+		var player = players[socket.id];
+    var room = rooms[player.room];
+
+    console.log( socket.id + ' has clicked');
+
+    if (room.next == player.type) {
+      console.log('Click accepted');
+      board[ data.key ].xo = current;
+      room.next = room.next == 'x' ? 'o' : 'x';
+      current = room.next;
+      io.emit('board', board);
+    } else {
+      console.log('Click denied');
+    }
+
 	});
   socket.on('reset', function(){
     board = newBoard();
@@ -81,7 +99,6 @@ io.on('connection', function (socket) {
   socket.emit('board', board);
   socket.emit('player', players[socket.id]);
   setRoom(false, socket);
-  console.log( rooms );
 });
 
 server.listen(3000, 'localhost', function(err) {
