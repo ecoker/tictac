@@ -72,8 +72,6 @@ var setRoom = function(name, socket){
   }
 };
 
-
-
 io.on('connection', function (socket) {
   socket.on('xo', function(data){
 		var player = players[socket.id];
@@ -81,8 +79,7 @@ io.on('connection', function (socket) {
 
     console.log( socket.id + ' has clicked');
 
-    if (room.next == player.type) {
-      console.log('Click accepted');
+    if (room.next == player.type && !board[ data.key ].xo) {
       board[ data.key ].xo = current;
       room.next = room.next == 'x' ? 'o' : 'x';
       current = room.next;
