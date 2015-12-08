@@ -39,6 +39,7 @@ var setPlayer = function(name, type, socket) {
     room: name,
     type: type
   };
+  socket.emit('player', players[socket.id]);
   console.log('Socket ' + socket.id + ' has connected.');
 };
 
@@ -68,7 +69,7 @@ var setRoom = function(name, socket){
     setPlayer(name, 'o', socket);
   } else {
     rooms[name].spectators.push(socket.id);
-    setPlayer('spectator', socket);
+    setPlayer(name, 'spectator', socket);
   }
 };
 
@@ -94,7 +95,6 @@ io.on('connection', function (socket) {
     io.emit('board', board);
   });
   socket.emit('board', board);
-  socket.emit('player', players[socket.id]);
   setRoom(false, socket);
 });
 

@@ -44,7 +44,7 @@ export class PlayerStatus extends Component {
   }
   render() {
     return (
-      <h2>{this.props.players.type}</h2>
+      <h2>You are: {this.props.player.type || ''}</h2>
     )
   }
 }
@@ -53,7 +53,8 @@ export class TicTac extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      board: []
+      board: [],
+      player: {}
     }
     this.claimSquare = this.claimSquare.bind(this);
     this.updateBoard = this.updateBoard.bind(this);
@@ -72,6 +73,7 @@ export class TicTac extends Component {
     this.setState({
       player: data
     });
+    console.log(this.state.player, data);
   }
   claimSquare(data){
     this.socket.emit('xo', data);
